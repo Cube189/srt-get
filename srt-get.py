@@ -1,16 +1,18 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 # coding=utf-8
 
 import urllib2
 from bs4 import BeautifulSoup
 from sys import argv, exit
+
 LONGEST_NAME_LEN = 0
 LONGEST_FORMAT_LEN = 0
 LONGEST_AUTHOR_LEN = 0
 
-chosenSubtitleId = ""
-movieName = ""
-subLang = ""
+
+chosenSubtitleId = None
+movieName = None
+subLang = None
 subtitles = []
 
 
@@ -50,7 +52,7 @@ def _parse_input_params(args):
         movieName = args[0]
         subLang = args[1].capitalize()
     else:
-        show_help()  
+        show_help()
 
 
 def _display_subtitles_menu():
@@ -66,8 +68,8 @@ def _display_subtitles_menu():
 
     for i in xrange(0, len(subtitles)):
         s = subtitles[i]
-        print "%2d  %s %s %s %s %s %s %s"% (
-            i, s.name, (LONGEST_NAME_LEN - len(s.name)) * " ", s.format,
+        print "%2d  %s %s %s %s %s %s %s"\
+            % (i, s.name, (LONGEST_NAME_LEN - len(s.name)) * " ", s.format,
             (LONGEST_FORMAT_LEN - len(s.format)) * " ", s.author,
             (LONGEST_AUTHOR_LEN - len(s.author)) * " ", s.date_added)
 
@@ -126,7 +128,6 @@ def _get_subtitles_file():
 
 def show_help():
     print "usage:", "srt-get movie-name language"
-    print 6 * " ", "srt-get movie-file language [delimiter]"
     exit(0)
 
 
