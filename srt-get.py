@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 # coding=utf-8
 
 import urllib2
@@ -13,20 +13,20 @@ LONGEST_NAME_LEN = 0
 LONGEST_FORMAT_LEN = 0
 LONGEST_AUTHOR_LEN = 0
 
-chosenSubtitleDwLink = ""
-movieName = ""
-subLang = ""
+chosenSubtitleId = None
+movieName = None
+subLang = None
 subtitles = []
 
 
 class Movie:
-    def __init__(self, name, format, author, rating, date_added, dw_link):
+    def __init__(self, name, format, author, rating, date_added, id):
         self.name = name
         self.format = format
         self.author = author if author is not None else "*anonymous*"
         self.rating = rating
         self.date_added = date_added
-        self.dw_link = dw_link
+        self.id = id
 
         global LONGEST_NAME_LEN
         global LONGEST_FORMAT_LEN
@@ -40,12 +40,9 @@ class Movie:
 
 
 def main(args):
-    if not args or "--help" in args:
-        show_help()
-    else:
-        _parse_input(args)
-        _display_subtitles_menu()
-        _get_subtitles_file(chosenSubtitleDwLink)
+    _parse_input(args)
+    _display_subtitles_menu()
+    _get_subtitles_file(chosenSubtitleId)
 
 
 def _parse_input(args):
@@ -54,16 +51,12 @@ def _parse_input(args):
     global subLang
     args[0] = args[0].strip()
 
-    if len(args) == 2:
+    if len(args) == 2 and not "--help" in args:
         if any("." + ext in args[0] for ext in EXTENSIONS):
             _parse_as_movie_file(args[0], None)
         else:
             _parse_as_movie_name(args[0])
         subLang = args[1]
-
-    elif len(args) == 3:
-        _parse_as_movie_file(args[0], args[1])
-
     else:
         show_help()
 
@@ -100,12 +93,12 @@ def _display_subtitles_menu():
 
 
 def _display_choice_prompt():
-    global chosenSubtitleDwLink
+    global chosenSubtitleId
 
-    chosenSubtitleId = int(raw_input("Number of subtitles file to download? "))
     try:
-        chosenSubtitleDwLink = subtitles[chosenSubtitleId].dw_link
-    except IndexError:
+        userChoice = int(raw_input("Number of subtitles file to download? "))
+        chosenSubtitleId = subtitles[userChoice].id
+    except IndexError, ValueError:
         print "Invalid number. Please type in the number next to your chosen option."
         _display_choice_prompt()
 
@@ -113,8 +106,9 @@ def _display_choice_prompt():
 def _get_available_subtitles():
     global subLang, movieName
     soup = BeautifulSoup(urllib2.urlopen(
-            "http://www.opensubtitles.org/en/search/moviename-" + movieName.replace(
-                    " ", "+") + "/sublanguageid-all/simplexml"), "html.parser")
+            "http://www.opensubtitles.org/en/search/moviename-"\
+            + movieName.replace(" ", "+") + "/sublanguageid-all/simplexml"),\
+            "html.parser")
     subtitleTags = soup.search.findAll('subtitle')
     subtitles = []
 
@@ -125,9 +119,9 @@ def _get_available_subtitles():
             user = subtitle.user.string
             rating = subtitle.subrating.string
             dateAdded = subtitle.subadddate.string
-            dwLink = subtitle.download.string
+            id = subtitle.idsubtitle.string
 
-            movie = Movie(name, format, user, rating, dateAdded, dwLink)
+            movie = Movie(name, format, user, rating, dateAdded, id)
             subtitles.append(movie)
 
     return subtitles
@@ -136,13 +130,17 @@ def _get_available_subtitles():
 def _get_subtitles_file(dw_link):
     """ Downloads the selected subtitles file """
 
-    global chosenSubtitleDwLink
-    print chosenSubtitleDwLink
+    global chosenSubtitleId
+    subtitleFileUrl = "http://www.opensubtitles.org/en/subtitleserve/sub/"+chosenSubtitleId
+    subtitleFile = urllib2.urlopen(subtitleFileUrl)
+    subtitleFileName = movieName+".zip"
+    with open(movieName+".zip", "wb") as output:
+        output.write(subtitleFile.read())
+    print "Successfully downloaded the file to your current directory as", subtitleFileName + ". Enjoy!"
 
 
 def show_help():
     print "usage:", "srt-get movie-name language"
-    print 6 * " ", "srt-get movie-file language [delimiter]"
     exit(0)
 
 
