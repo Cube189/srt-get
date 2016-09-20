@@ -5,10 +5,6 @@ import urllib2
 from bs4 import BeautifulSoup
 from sys import argv, exit
 
-EXTENSIONS = ["amv", "asf", "avi", "drc", "flv", "m2v", "m4p", "m4v", "mkv",
-              "mov", "mp2", "mp4", "mpe", "mpeg", "mpg", "mpv", "ogg", "qt",
-              "rm", "rmvb", "vob", "wmv"]
-
 LONGEST_NAME_LEN = 0
 LONGEST_FORMAT_LEN = 0
 LONGEST_AUTHOR_LEN = 0
@@ -40,35 +36,22 @@ class Movie:
 
 
 def main(args):
-    _parse_input(args)
+    _parse_input_params(args)
     _display_subtitles_menu()
-    _get_subtitles_file(chosenSubtitleId)
+    _get_subtitles_file()
 
 
-def _parse_input(args):
+def _parse_input_params(args):
     """ Interprets user input in search of the movie's title """
 
-    global subLang
+    global movieName, subLang
     args[0] = args[0].strip()
 
     if len(args) == 2 and not "--help" in args:
-        if any("." + ext in args[0] for ext in EXTENSIONS):
-            _parse_as_movie_file(args[0], None)
-        else:
-            _parse_as_movie_name(args[0])
-        subLang = args[1]
+        movieName = args[0]
+        subLang = args[1].capitalize()
     else:
         show_help()
-
-
-def _parse_as_movie_file(name, delimiter):
-    global movieName
-    movieName = name if delimiter is None or delimiter is " " else name.replace(delimiter, " ")
-
-
-def _parse_as_movie_name(name):
-    global movieName
-    movieName = name
 
 
 def _display_subtitles_menu():
@@ -84,8 +67,8 @@ def _display_subtitles_menu():
 
     for i in xrange(0, len(subtitles)):
         s = subtitles[i]
-        print "%2d  %s %s %s %s %s %s %s" % (
-            i, s.name, (LONGEST_NAME_LEN - len(s.name)) * " ", s.format,
+        print "%2d  %s %s %s %s %s %s %s"\
+            % (i, s.name, (LONGEST_NAME_LEN - len(s.name)) * " ", s.format,
             (LONGEST_FORMAT_LEN - len(s.format)) * " ", s.author,
             (LONGEST_AUTHOR_LEN - len(s.author)) * " ", s.date_added)
 
@@ -104,6 +87,8 @@ def _display_choice_prompt():
 
 
 def _get_available_subtitles():
+    """ Gets subtitles available on the server """
+
     global subLang, movieName
     soup = BeautifulSoup(urllib2.urlopen(
             "http://www.opensubtitles.org/en/search/moviename-"\
@@ -127,7 +112,7 @@ def _get_available_subtitles():
     return subtitles
 
 
-def _get_subtitles_file(dw_link):
+def _get_subtitles_file():
     """ Downloads the selected subtitles file """
 
     global chosenSubtitleId
